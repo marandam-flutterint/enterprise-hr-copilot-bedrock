@@ -1,0 +1,125 @@
+# python 3.12
+
+import json
+import uuid
+import boto3
+import os
+
+dynamodb = boto3.client('dynamodb')
+sns = boto3.client('sns')
+
+TOPIC_ARN = os.environ['SNS_TOPIC_ARN']
+
+LEAVE_REQUESTS_TABLE = "LeaveRequests"
+LEAVE_BALANCE_TABLE = "LeaveBalance"
+
+
+def lambda_handler(event, context):
+
+    try:
+
+        employee_id = event["employeeId"]
+        leave_type = event["leaveType"]
+        days = int(event["days"])
+
+        # Get leave balance
+        balance_response = dynamodb.get_item(
+            TableName=LEAVE_BALANCE_TABLE,
+            Key={
+                "employeeId": {
+                    "S": employee_id
+                }
+            }
+        )
+
+        if "Item" not in balance_response:
+            return {
+                "statusCode": 404,
+                "body": "Leave balance record not found"
+            }
+
+        balance_item = balance_response["Item"]
+
+        leave_type_map = {
+            "annual": "annualLeave",
+            "sick": "sickLeave",
+            "casual": "casualLeave"
+        }
+        if leave_type not in leave_type_map:
+            raise Exception(f"Unsupported leave type: {leave_type}")
+
+
+        balance_field = leave_type_map.get(leave_type)
+
+        if not balance_field:
+            return {
+                "statusCode": 400,
+                "body": f"Unsupported leave type: {leave_type}"
+            }
+
+        available_balance = int(
+            balance_item[balance_field]["N"]
+        )
+
+        # Validate balance
+        if days > available_balance:
+            return {
+                "statusCode": 400,
+                "body": (
+                    f"Insufficient leave balance. "
+                    f"Available: {available_balance}, "
+                    f"Requested: {days}"
+                )
+            }
+
+        # Create leave request
+        request_id = str(uuid.uuid4())[:8]
+
+        dynamodb.put_item(
+            TableName=LEAVE_REQUESTS_TABLE,
+            Item={
+                "requestId": {"S": request_id},
+                "employeeId": {"S": employee_id},
+                "leaveType": {"S": leave_type},
+                "days": {"N": str(days)},
+                "status": {"S": "Pending"}
+            }
+        )
+
+        # SNS Notification
+        sns.publish(
+            TopicArn=TOPIC_ARN,
+            Subject="New Leave Request Submitted",
+            Message=f"""
+A new leave request has been submitted.
+
+Request ID: {request_id}
+Employee ID: {employee_id}
+Leave Type: {leave_type}
+Days Requested: {days}
+
+Status: Pending Approval
+"""
+        )
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps({
+                "message": "Leave request created successfully",
+                "requestId": request_id,
+                "status": "Pending",
+                "availableBalance": available_balance
+            })
+        }
+
+    except KeyError as e:
+        return {
+            "statusCode": 400,
+            "body": f"Missing required field: {str(e)}"
+        }
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": str(e)
+        }
