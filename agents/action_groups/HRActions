@@ -1,0 +1,124 @@
+# Create action groups in Aws Bedrock under agents
+
+1. create Enterprise-HR-Copilot agent in bedrock
+2. create HRActions action group under agents in bedrock
+3. attach existing hr_copilot_agent_handler lambda function
+
+
+4. Attach all actions group:
+
+5. Action group function 1 : getEmploye
+
+{
+  "name": "getEmployeeDetails",
+  "parameters": {
+    "employeeId": {
+      "description": "get employee id",
+      "required": "True",
+      "type": "string"
+    }
+  },
+  "requireConfirmation": "DISABLED"
+}
+
+
+
+6. Action group function 2 : createLeav
+
+{
+  "name": "createLeaveRequest",
+  "parameters": {
+    "leaveType": {
+      "description": "leave type",
+      "required": "True",
+      "type": "string"
+    },
+    "days": {
+      "description": "days",
+      "required": "True",
+      "type": "integer"
+    },
+    "employeeId": {
+      "description": "get employee id",
+      "required": "True",
+      "type": "string"
+    }
+  },
+  "requireConfirmation": "DISABLED"
+}
+
+
+
+
+7. Action group function 3 : approveLea
+
+{
+  "name": "approveLeaveRequest",
+  "parameters": {
+    "comments": {
+      "description": "comments",
+      "required": "False",
+      "type": "string"
+    },
+    "requestId": {
+      "description": "request id",
+      "required": "True",
+      "type": "string"
+    },
+    "action": {
+      "description": "action",
+      "required": "True",
+      "type": "string"
+    }
+  },
+  "requireConfirmation": "DISABLED"
+}
+
+
+
+8. Action group function 4 : getLeaveBa
+
+
+{
+  "name": "getLeaveBalance",
+  "parameters": {
+    "employeeId": {
+      "description": "get employee id",
+      "required": "True",
+      "type": "string"
+    }
+  },
+  "requireConfirmation": "DISABLED"
+}
+
+
+
+
+9. Action group function 5 : listPendin
+
+
+{
+  "name": "listPendingRequests",
+  "parameters": {},
+  "requireConfirmation": "DISABLED"
+}
+
+
+
+10. Action group function 6 : checkLeave
+
+
+{
+  "name": "checkLeaveRequestStatus",
+  "parameters": {
+    "requestId": {
+      "description": "request id",
+      "required": "True",
+      "type": "string"
+    }
+  },
+  "requireConfirmation": "DISABLED"
+}
+
+
+
