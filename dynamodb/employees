@@ -1,0 +1,46 @@
+#dynamodb table
+
+{
+  "employeeId": {
+    "S": "123"
+  },
+  "department": {
+    "S": "Engineering"
+  },
+  "email": {
+    "S": "john.doe@example.com"
+  },
+  "location": {
+    "S": "New York"
+  },
+  "name": {
+    "S": "John Doe"
+  },
+  "phone": {
+    "S": "123-456-7890"
+  },
+  "position": {
+    "S": "Software Engineer"
+  }
+}
+
+{
+  "employeeId": {
+    "S": "456"
+  },
+  "department": {
+    "S": "Finance"
+  },
+  "email": {
+    "S": "jane.smith@example.com"
+  },
+  "location": {
+    "S": "London"
+  },
+  "name": {
+    "S": "Jane Smith"
+  },
+  "position": {
+    "S": "Manager"
+  }
+}
