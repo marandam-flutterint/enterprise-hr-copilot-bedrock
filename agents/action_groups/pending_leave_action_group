@@ -1,0 +1,19 @@
+# Create action groups in Aws Bedrock under agents
+
+1. create pending_leave_action_group agent in bedrock
+2. attach existing list_pending_equests lambda function
+
+
+3. json editor
+{
+  "name": "listPendingRequests",
+  "description": "Retrieve all pending leave requests",
+  "parameters": {
+    "pending_leave_requests": {
+      "description": "Retrieve all pending leave requests",
+      "required": "True",
+      "type": "string"
+    }
+  },
+  "requireConfirmation": "DISABLED"
+}
