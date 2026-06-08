@@ -1,0 +1,25 @@
+
+
+{
+  "requestId": {
+    "S": "247a37ad"
+  },
+  "approvedAt": {
+    "S": "2026-06-07T06:35:52.237919"
+  },
+  "comments": {
+    "S": "Approved by manager"
+  },
+  "days": {
+    "N": "2"
+  },
+  "employeeId": {
+    "S": "123"
+  },
+  "leaveType": {
+    "S": "Annual"
+  },
+  "status": {
+    "S": "Approved"
+  }
+}
