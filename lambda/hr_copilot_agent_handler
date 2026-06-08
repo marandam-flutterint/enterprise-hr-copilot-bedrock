@@ -1,0 +1,128 @@
+#python 3.12
+
+import json
+import boto3
+
+lambda_client = boto3.client("lambda")
+
+
+def invoke_lambda(function_name, payload):
+
+    response = lambda_client.invoke(
+        FunctionName=function_name,
+        InvocationType="RequestResponse",
+        Payload=json.dumps(payload)
+    )
+
+    return json.loads(
+        response["Payload"].read().decode("utf-8")
+    )
+
+
+def lambda_handler(event, context):
+
+    print(json.dumps(event))
+
+    function_name = event.get("function")
+
+    parameters = {}
+
+    for param in event.get("parameters", []):
+        parameters[param["name"]] = param["value"]
+
+    try:
+
+        if function_name == "getEmployeeDetails":
+
+            response = invoke_lambda(
+                "getEmployeeProfile",
+                {
+                    "actionGroup": event.get("actionGroup"),
+                    "function": function_name,
+                    "parameters": [
+                        {
+                            "name": "employeeId",
+                            "value": parameters.get("employeeId")
+                        }
+                    ]
+                }
+            )
+
+        elif function_name == "createLeaveRequest":
+
+            response = invoke_lambda(
+                "create_leave_request",
+                {
+                    "employeeId": parameters.get("employeeId"),
+                    "leaveType": parameters.get("leaveType"),
+                    "days": int(parameters.get("days"))
+                }
+            )
+
+        elif function_name == "approveLeaveRequest":
+
+            response = invoke_lambda(
+                "approve_leave_request",
+                {
+                    "requestId": parameters.get("requestId"),
+                    "action": parameters.get("action"),
+                    "comments": parameters.get("comments", "")
+                }
+            )
+
+        elif function_name == "getLeaveBalance":
+
+            response = invoke_lambda(
+                "getLeaveBalance",
+                {
+                    "employeeId": parameters.get("employeeId")
+                }
+            )
+
+        elif function_name == "listPendingRequests":
+
+            response = invoke_lambda(
+                "list_pending_requests",
+                {
+                    "actionGroup": event.get("actionGroup"),
+                    "function": function_name
+                }
+            )
+
+        elif function_name == "checkLeaveRequestStatus":
+
+            response = invoke_lambda(
+                "check_leave_request_status",
+                {
+                    "requestId": parameters.get("requestId")
+                }
+            )
+
+        else:
+
+            response = {
+                "error": f"Unknown function {function_name}"
+            }
+
+        body = json.dumps(response)
+
+    except Exception as e:
+
+        body = json.dumps({
+            "error": str(e)
+        })
+
+    return {
+        "messageVersion": "1.0",
+        "response": {
+            "actionGroup": event.get("actionGroup"),
+            "function": function_name,
+            "functionResponse": {
+                "responseBody": {
+                    "TEXT": {
+                        "body": body
+                    }
+                }
+            }
+        }
+    }
