@@ -1,0 +1,26 @@
+{
+  "employeeId": {
+    "S": "123"
+  },
+  "annualLeave": {
+    "N": "5"
+  },
+  "casualLeave": {
+    "N": "4"
+  },
+  "sickLeave": {
+    "N": "8"
+  }
+}
+
+{
+  "employeeId": {
+    "S": "456"
+  },
+  "annualLeave": {
+    "N": "20"
+  },
+  "sickLeave": {
+    "N": "10"
+  }
+}
