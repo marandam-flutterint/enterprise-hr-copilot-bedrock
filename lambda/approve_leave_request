@@ -1,0 +1,171 @@
+# python 3.12
+import json
+import boto3
+import uuid
+import os
+from datetime import datetime
+
+dynamodb = boto3.client("dynamodb")
+sns = boto3.client("sns")
+
+TOPIC_ARN = os.environ["SNS_TOPIC_ARN"]
+
+LEAVE_REQUESTS_TABLE = "LeaveRequests"
+LEAVE_BALANCE_TABLE = "LeaveBalance"
+LEAVE_AUDIT_TABLE = "LeaveAudit"
+
+
+def lambda_handler(event, context):
+
+    try:
+
+        request_id = event["requestId"]
+        action = event["action"]
+        comments = event.get("comments", "")
+
+        # Get Leave Request
+        response = dynamodb.get_item(
+            TableName=LEAVE_REQUESTS_TABLE,
+            Key={
+                "requestId": {"S": request_id}
+            }
+        )
+
+        if "Item" not in response:
+            return {
+                "statusCode": 404,
+                "body": f"Request {request_id} not found"
+            }
+
+        item = response["Item"]
+
+        employee_id = item["employeeId"]["S"]
+        leave_type = item["leaveType"]["S"]
+        days = int(item["days"]["N"])
+        current_status = item["status"]["S"]
+
+        if current_status != "Pending":
+            return {
+                "statusCode": 400,
+                "body": f"Request already processed. Current status: {current_status}"
+            }
+
+        # Deduct Leave Balance
+        if action == "Approved":
+
+            balance_response = dynamodb.get_item(
+                TableName=LEAVE_BALANCE_TABLE,
+                Key={
+                    "employeeId": {"S": employee_id}
+                }
+            )
+
+            if "Item" not in balance_response:
+                return {
+                    "statusCode": 404,
+                    "body": f"Leave balance not found for employee {employee_id}"
+                }
+
+            balance_item = balance_response["Item"]
+
+            leave_type_map = {
+                "Annual": "annualLeave",
+                "Sick": "sickLeave"
+            }
+
+            balance_field = leave_type_map.get(leave_type)
+
+            if not balance_field:
+                return {
+                    "statusCode": 400,
+                    "body": f"Unsupported leave type: {leave_type}"
+                }
+
+            current_balance = int(
+                balance_item[balance_field]["N"]
+            )
+
+            if current_balance < days:
+                return {
+                    "statusCode": 400,
+                    "body": "Insufficient leave balance"
+                }
+
+            new_balance = current_balance - days
+
+            dynamodb.update_item(
+                TableName=LEAVE_BALANCE_TABLE,
+                Key={
+                    "employeeId": {"S": employee_id}
+                },
+                UpdateExpression=f"SET {balance_field} = :b",
+                ExpressionAttributeValues={
+                    ":b": {"N": str(new_balance)}
+                }
+            )
+
+        # Update Request
+        dynamodb.update_item(
+            TableName=LEAVE_REQUESTS_TABLE,
+            Key={
+                "requestId": {"S": request_id}
+            },
+            UpdateExpression="SET #s = :status, comments = :comments, approvedAt = :approvedAt",
+            ExpressionAttributeNames={
+                "#s": "status"
+            },
+            ExpressionAttributeValues={
+                ":status": {"S": action},
+                ":comments": {"S": comments},
+                ":approvedAt": {"S": datetime.utcnow().isoformat()}
+            }
+        )
+
+        # Audit Record
+        audit_id = str(uuid.uuid4())[:8]
+
+        dynamodb.put_item(
+            TableName=LEAVE_AUDIT_TABLE,
+            Item={
+                "auditId": {"S": audit_id},
+                "requestId": {"S": request_id},
+                "employeeId": {"S": employee_id},
+                "action": {"S": action},
+                "comments": {"S": comments},
+                "timestamp": {"S": datetime.utcnow().isoformat()}
+            }
+        )
+
+        # SNS Notification
+        sns.publish(
+            TopicArn=TOPIC_ARN,
+            Subject=f"Leave Request {action}",
+            Message=f"""
+Leave Request Update
+
+Request ID: {request_id}
+Employee ID: {employee_id}
+Leave Type: {leave_type}
+Days: {days}
+
+Status: {action}
+
+Comments:
+{comments}
+"""
+        )
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps({
+                "message": f"Leave request {action}",
+                "requestId": request_id,
+                "employeeId": employee_id
+            })
+        }
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": str(e)
+        }
