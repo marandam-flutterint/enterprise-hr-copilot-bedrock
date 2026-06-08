@@ -1,0 +1,46 @@
+#python 3.12
+
+import boto3
+import json
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('LeaveRequests')
+
+def lambda_handler(event, context):
+
+    print(json.dumps(event))
+
+    response = table.scan()
+
+    pending_requests = []
+
+    for item in response.get('Items', []):
+
+        if item.get('status') == 'Pending':
+
+            pending_requests.append(
+                f"Request ID: {item['requestId']}, "
+                f"Employee: {item['employeeId']}, "
+                f"Type: {item['leaveType']}, "
+                f"Days: {item['days']}"
+            )
+
+    if not pending_requests:
+        result = "There are no pending leave requests."
+    else:
+        result = "\n".join(pending_requests)
+
+    return {
+        "messageVersion": "1.0",
+        "response": {
+            "actionGroup": event.get("actionGroup"),
+            "function": event.get("function"),
+            "functionResponse": {
+                "responseBody": {
+                    "TEXT": {
+                        "body": result
+                    }
+                }
+            }
+        }
+    }
