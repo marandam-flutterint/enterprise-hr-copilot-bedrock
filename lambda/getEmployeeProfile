@@ -1,0 +1,66 @@
+#python 3.12
+
+import json
+import boto3
+import re
+from decimal import Decimal
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('Employees')
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+def lambda_handler(event, context):
+
+    print("EVENT:", json.dumps(event))
+
+    employee_id = None
+
+    # Try parameters first
+    for param in event.get("parameters", []):
+        if param.get("name") == "employeeId":
+            employee_id = param.get("value")
+            break
+
+    # Fallback: extract employee ID from input text
+    if not employee_id:
+        input_text = event.get("inputText", "")
+        match = re.search(r'\b\d+\b', input_text)
+
+        if match:
+            employee_id = match.group(0)
+
+    if not employee_id:
+        body = "employeeId not provided"
+    else:
+        response = table.get_item(
+            Key={
+                'employeeId': employee_id
+            }
+        )
+
+        item = response.get('Item')
+
+        if item:
+            body = json.dumps(item, cls=DecimalEncoder)
+        else:
+            body = f"Employee {employee_id} not found"
+
+    return {
+        "messageVersion": "1.0",
+        "response": {
+            "actionGroup": event.get("actionGroup"),
+            "function": event.get("function"),
+            "functionResponse": {
+                "responseBody": {
+                    "TEXT": {
+                        "body": body
+                    }
+                }
+            }
+        }
+    }
