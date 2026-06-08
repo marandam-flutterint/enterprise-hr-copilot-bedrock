@@ -1,0 +1,29 @@
+1. create agents in aws bedrock
+2. create action group under agents
+
+3. attach existing approve_leave_request lambda function
+
+4. json editor
+
+{
+  "name": "approveLeaveRequest",
+  "description": "Approve or reject an employee leave request",
+  "parameters": {
+    "comments": {
+      "description": "Manager comments",
+      "required": "False",
+      "type": "string"
+    },
+    "requestId": {
+      "description": "Leave request ID",
+      "required": "True",
+      "type": "string"
+    },
+    "action": {
+      "description": "Approved or Rejected",
+      "required": "True",
+      "type": "string"
+    }
+  },
+  "requireConfirmation": "DISABLED"
+}
