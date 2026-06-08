@@ -1,0 +1,41 @@
+{
+  "auditId": {
+    "S": "c25f71f3"
+  },
+  "action": {
+    "S": "Approved"
+  },
+  "comments": {
+    "S": "Approved by manager"
+  },
+  "employeeId": {
+    "S": "123"
+  },
+  "requestId": {
+    "S": "247a37ad"
+  },
+  "timestamp": {
+    "S": "2026-06-07T06:35:52.257729"
+  }
+}
+
+{
+  "auditId": {
+    "S": "94fec954"
+  },
+  "action": {
+    "S": "approve"
+  },
+  "comments": {
+    "S": ""
+  },
+  "employeeId": {
+    "S": "123"
+  },
+  "requestId": {
+    "S": "4c4cc057"
+  },
+  "timestamp": {
+    "S": "2026-06-07T07:47:58.321109"
+  }
+}
