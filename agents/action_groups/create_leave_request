@@ -1,0 +1,29 @@
+# Create action groups in Aws Bedrock under agents
+
+1. create create_leave_request agent in bedrock
+2. attach existing create_leave_request lambda function
+
+3. json editor
+
+{
+  "name": "create_leave_request1",
+  "description": "Creates a leave request and stores it for approval.",
+  "parameters": {
+    "leaveType": {
+      "description": "Leave type such as Annual, Sick, or Casual",
+      "required": "True",
+      "type": "string"
+    },
+    "days": {
+      "description": "Number of leave days requested",
+      "required": "True",
+      "type": "number"
+    },
+    "employeeId": {
+      "description": "Unique employee identifier such as 123",
+      "required": "True",
+      "type": "string"
+    }
+  },
+  "requireConfirmation": "DISABLED"
+}
